@@ -1,0 +1,4 @@
+CMakeFiles
+src/external
+cmake*
+hartree-fock
