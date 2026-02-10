@@ -13,10 +13,17 @@
 <!-- <p align="justify"> Before installing planck, you must install boost which is a dependency for Planck. </p> -->
 
 ```
-git clone https://github.com/HemanthHaridas/planck.git
-cd planck
-mkdir build
-cmake -S . -B build --install-prefix=$(pwd)
+git clone https://github.com/HemanthHaridas/hartee-fock-v2.git hartee-fock
+cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)
+cmake --build build 
+cmake --install build 
+```
+
+To update the code
+```
+cd hartee-fock
+git pull
+cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$(pwd)
 cmake --build build 
 cmake --install build 
 ```
