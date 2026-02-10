@@ -4,4 +4,6 @@ cmake_*
 *Cache*
 hartree-fock
 install*
+build
+bin
 Makefile

@@ -16,9 +16,9 @@
 git clone https://github.com/HemanthHaridas/planck.git
 cd planck
 mkdir build
-cmake ..
-make
-make install
+cmake -S . -B build --install-prefix=$(pwd)
+cmake --build build 
+cmake --install build 
 ```
 
 #### Usage Instructions
