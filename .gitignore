@@ -1,4 +1,7 @@
 CMakeFiles
 src/external
-cmake*
+cmake_*
+*Cache*
 hartree-fock
+install*
+Makefile

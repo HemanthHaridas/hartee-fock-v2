@@ -259,6 +259,30 @@ src/basis/gaussian.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/hartree-fock.dir/build.make CMakeFiles/hartree-fock.dir/src/basis/gaussian.cpp.s
 .PHONY : src/basis/gaussian.cpp.s
 
+src/integrals/base.o: src/integrals/base.cpp.o
+.PHONY : src/integrals/base.o
+
+# target to build an object file
+src/integrals/base.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hartree-fock.dir/build.make CMakeFiles/hartree-fock.dir/src/integrals/base.cpp.o
+.PHONY : src/integrals/base.cpp.o
+
+src/integrals/base.i: src/integrals/base.cpp.i
+.PHONY : src/integrals/base.i
+
+# target to preprocess a source file
+src/integrals/base.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hartree-fock.dir/build.make CMakeFiles/hartree-fock.dir/src/integrals/base.cpp.i
+.PHONY : src/integrals/base.cpp.i
+
+src/integrals/base.s: src/integrals/base.cpp.s
+.PHONY : src/integrals/base.s
+
+# target to generate assembly for a file
+src/integrals/base.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/hartree-fock.dir/build.make CMakeFiles/hartree-fock.dir/src/integrals/base.cpp.s
+.PHONY : src/integrals/base.cpp.s
+
 src/io/io.o: src/io/io.cpp.o
 .PHONY : src/io/io.o
 
@@ -378,6 +402,9 @@ help:
 	@echo "... src/basis/gaussian.o"
 	@echo "... src/basis/gaussian.i"
 	@echo "... src/basis/gaussian.s"
+	@echo "... src/integrals/base.o"
+	@echo "... src/integrals/base.i"
+	@echo "... src/integrals/base.s"
 	@echo "... src/io/io.o"
 	@echo "... src/io/io.i"
 	@echo "... src/io/io.s"

@@ -3,6 +3,7 @@
 #include "io/logging.h"
 #include "basis/basis.h"
 #include "symmetry/symmetry.h"
+#include "integrals/base.h"
 
 #include <chrono>
 #include <iostream>
@@ -82,13 +83,18 @@ int main(int argc, const char *argv[])
         return EXIT_FAILURE;
     }
 
-    // logging(LogLevel::Info, "Input Parsing :", "Successful");
+    logging(LogLevel::Info, "Input Parsing :", "Successful");
 
-    // auto res = detectSymmetry(molecule);
     // Detect Symmetry
+    if (!calculator.use_pgsymmetry)
+    {
+        logging(LogLevel::Info, "Symmetry Detection :", "Symmetry detection is turned off by request");
+    }
+
+    logging(LogLevel::Info, "Symmetry Detection :", "We use libmsym library to detect point groups");
+
     if (auto res = detectSymmetry(molecule); !res)
     {
-        std::cout << res.error() << "\n";
         logging(LogLevel::Error, "Symmetry Detection Failed :", res.error());
         return EXIT_FAILURE;
     }
@@ -103,13 +109,13 @@ int main(int argc, const char *argv[])
     {
         std::string cstr;
         std::ostringstream astream;
-        astream << std::setw(15) << std::right << molecule.atomic_numbers[index];
+        astream << std::setw(5) << std::right << molecule.atomic_numbers[index];
         cstr += astream.str();
 
         for (std::size_t cindex = 0; cindex < 3; ++cindex)
         {
             std::ostringstream oss;
-            oss << std::setw(25) << std::setprecision(3) << std::fixed << molecule.coordinates[3 * index + cindex];
+            oss << std::setw(10) << std::setprecision(3) << std::fixed << molecule.coordinates[3 * index + cindex];
             cstr += oss.str();
         }
         logging(LogLevel::Info, "", cstr);
@@ -123,13 +129,13 @@ int main(int argc, const char *argv[])
         {
             std::string cstr;
             std::ostringstream astream;
-            astream << std::setw(15) << std::right << molecule.atomic_numbers[index];
+            astream << std::setw(5) << std::right << molecule.atomic_numbers[index];
             cstr += astream.str();
 
             for (std::size_t cindex = 0; cindex < 3; ++cindex)
             {
                 std::ostringstream oss;
-                oss << std::setw(25) << std::setprecision(3) << std::fixed << molecule.coordinates_standard[3 * index + cindex];
+                oss << std::setw(10) << std::setprecision(3) << std::fixed << molecule.coordinates_standard[3 * index + cindex];
                 cstr += oss.str();
             }
             logging(LogLevel::Info, "", cstr);
@@ -143,7 +149,7 @@ int main(int argc, const char *argv[])
     }
 
     // Parse basis sets
-    const fs::path gbs_path = fs::path("basis-sets") / calculator.basis_name;
+    const fs::path gbs_path = calculator.basis_path + "/" + calculator.basis_name;
     logging(LogLevel::Info, "Reading Basis Set :", gbs_path.string());
 
     Basis basis;
@@ -159,7 +165,23 @@ int main(int argc, const char *argv[])
         return EXIT_FAILURE;
     }
 
-    logging(LogLevel::Info, "Basis Construction :", std::format("Generated {} Shells and {} contracted functions", basis.shells.size(), basis.functions.size()));
+    logging(LogLevel::Info, "Basis Construction :", std::format("Generated {} Shells and {} contracted functions", basis.nshells(), basis.nbf()));
+
+    // Find number of shell pairs
+    const std::size_t ns = basis.nshells();
+
+    // Store all shell pairs
+    std::vector<ShellPair> shell_pairs = {};
+    shell_pairs.reserve(ns * (ns + 1) * 0.5);
+
+    for (std::size_t ii = 0; ii < ns; ii++)
+    {
+        for (std::size_t jj = 0; jj <= ii; jj++)
+        {
+            shell_pairs.emplace_back(ShellPair{basis.shells[ii], basis.shells[jj]});
+        }
+    }
+
     const auto program_end = SystemClock::now();
     const std::chrono::duration<double> elapsed = program_end - program_start;
 

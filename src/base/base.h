@@ -125,13 +125,26 @@ struct Calculator
 {
     // Input
     std::string basis_name;
+    std::string basis_path;
     std::string method;
+    std::string calc_type;  // calculation type
     std::string coord_type; // cartesian / z-matrix
     std::string basis_type; // cartesian / spherical
 
+    int max_iter = 50;
+    int max_scf = 50;
+    int diis_dim = 10;
+
+    double tol_scf = 1e-10;
+    double tol_eri = 1e-10;
+
+    bool use_pgsymmetry = true;
+    bool use_diis = true;
+
     int charge = 0;
     int multiplicity = 1;
-
+    int tot_electrons = 0;
+    
     // Output
     double final_energy = 0.0;
     bool converged = false;

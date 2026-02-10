@@ -2,12 +2,17 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <unordered_map>
+#include <functional>
 #include <expected>
+#include <algorithm>
 #include <sstream>
 #include <cctype>
 
+#include "base/basis.h"
 #include "io.h"
 #include "lookup/elements.h"
+#include <numeric>
 
 /*-----------------------------------------------------------------------------
  * Planck
@@ -41,7 +46,67 @@ static void trim(std::string &s)
     s = s.substr(first, last - first + 1);
 }
 
-std::expected<SectionMap, std::string>split_into_sections(std::istream &input)
+std::string toLower(const std::string &parsedString)
+{
+    std::string lowerString = parsedString; // Create a copy to preserve the original string
+    std::transform(lowerString.begin(), lowerString.end(), lowerString.begin(), ::tolower);
+    return lowerString; // Return the transformed string
+}
+
+bool stringToBool(const std::string &parsedString)
+{
+    std::string upperStr = parsedString;
+    std::transform(upperStr.begin(), upperStr.end(), upperStr.begin(), ::toupper); // Convert to uppercase
+
+    if (upperStr == "ON")
+    {
+        return true; // "ON" maps to true
+    }
+    else if (upperStr == "OFF")
+    {
+        return false; // "OFF" maps to false
+    }
+    else
+    {
+        throw std::invalid_argument("Invalid string for boolean conversion."); // Handle unexpected input
+    }
+}
+
+std::expected<void, std::string> check_charge_multiplicity(const Molecule &molecule, const Calculator &calc)
+{
+    int n_elec = std::accumulate(molecule.atomic_numbers.begin(), molecule.atomic_numbers.end(), 0) - calc.charge;
+
+    if (n_elec <= 0)
+        return std::unexpected("Invalid electron count: " + std::to_string(n_elec));
+
+    if (calc.multiplicity <= 0)
+        return std::unexpected("Invalid spin multiplicity: " + std::to_string(calc.multiplicity));
+
+    // Parity check: odd multiplicity → even electrons, even multiplicity → odd electrons
+    bool parity_ok = ((calc.multiplicity % 2 == 1 && n_elec % 2 == 0) || (calc.multiplicity % 2 == 0 && n_elec % 2 == 1));
+
+    if (!parity_ok)
+    {
+        return std::unexpected(
+            "Parity mismatch: electron count (" + std::to_string(n_elec) + ") incompatible with multiplicity (" + std::to_string(calc.multiplicity) + ")");
+    }
+
+    // Max multiplicity check: multiplicity cannot exceed n_elec + 1
+    if (calc.multiplicity > n_elec + 1)
+    {
+        return std::unexpected("Multiplicity (" + std::to_string(calc.multiplicity) + ") exceeds maximum possible for " + std::to_string(n_elec) + " electrons");
+    }
+
+    // check if theory and multiplcity match
+    if (calc.multiplicity > 1 && calc.method.compare("uhf"))
+    {
+        return std::unexpected("Multiplicity (" + std::to_string(calc.multiplicity) + ") is incompatibile with " + calc.method);
+    }
+
+    return {}; // success
+}
+
+std::expected<SectionMap, std::string> split_into_sections(std::istream &input)
 {
     SectionMap sections;
 
@@ -105,7 +170,7 @@ std::expected<SectionMap, std::string>split_into_sections(std::istream &input)
     return sections;
 }
 
-std::expected<Molecule, std::string>parse_geometry(const std::vector<std::string> &lines)
+std::expected<Molecule, std::string> parse_geometry(const std::vector<std::string> &lines)
 {
     if (lines.empty())
         return std::unexpected("Empty GEOM section");
@@ -155,32 +220,69 @@ std::expected<Molecule, std::string>parse_geometry(const std::vector<std::string
     return mol;
 }
 
-std::expected<Calculator, std::string>parse_calculator(const std::vector<std::string> &lines)
+std::expected<Calculator, std::string> parse_calculator(const std::vector<std::string> &lines)
 {
     if (lines.size() < 2)
+    {
         return std::unexpected("Incomplete CALC section");
+    }
 
     Calculator calc;
 
-    {
-        std::istringstream iss(lines[0]);
-        if (!(iss >> calc.basis_name >> calc.method >> calc.basis_type))
-            return std::unexpected("Malformed CALC header: " + lines[0]);
-    }
+    // maps to varaibles
+    std::unordered_map<std::string, std::function<void(std::string)>> handlers_setup = {
+        // calculation information
+        {"CALC_TYPE",   [&calc](std::string value){ calc.calc_type  = toLower(value); }},
+        {"THEORY",      [&calc](std::string value){ calc.method     = toLower(value); }},
+        {"BASIS",       [&calc](std::string value){ calc.basis_name = toLower(value); }},
+        // {"BASIS_PATH",  [&calc](std::string value){ calc.basis_path = toLower(value); }},
 
+        // diis and symmetry information
+        {"USE_SYMM",    [&calc](std::string value){ calc.use_pgsymmetry = stringToBool(value); }},
+        {"USE_DIIS",    [&calc](std::string value){ calc.use_diis       = stringToBool(value); }},
+
+        // max cycles, charge and multiplicity
+        {"MAXITER",     [&calc](std::string value){ calc.max_iter       = std::stoi(value); }},
+        {"MAXSCF",      [&calc](std::string value){ calc.max_scf        = std::stoi(value); }},
+        {"CHARGE",      [&calc](std::string value){ calc.charge         = std::stoi(value); }},
+        {"MULTI",       [&calc](std::string value){ calc.multiplicity   = std::stoi(value); }},
+        {"DIIS_DIM",    [&calc](std::string value){ calc.diis_dim       = std::stoi(value); }},
+
+        // tolerances
+        {"TOLSCF",      [&calc](std::string value){ calc.tol_scf   = std::stod(value); }},
+        {"TOLERI",      [&calc](std::string value){ calc.tol_eri   = std::stod(value); }}
+        };
+
+    for (auto line : lines)
     {
-        std::istringstream iss(lines[1]);
-        if (!(iss >> calc.charge >> calc.multiplicity))
-            return std::unexpected("Malformed charge/multiplicity line: " + lines[1]);
+        std::istringstream iss(line);
+        std::string key, value;
+
+        if (!(iss >> key >> value))
+        {
+            return std::unexpected("Malformed Input line");
+        }
+
+        // search for the key in map
+        auto it = handlers_setup.find(key);
+
+        if (it == handlers_setup.end())
+        {
+            return std::unexpected("Key not found. Check [CALC] block");
+        }
+
+        // now set the value
+        it->second(value);
     }
 
     if (calc.multiplicity <= 0)
         return std::unexpected("Invalid spin multiplicity");
 
+    calc.basis_path = get_basis_path();
     return calc;
 }
 
-std::expected<void, std::string>read_input(std::istream &input, Calculator &calc, Molecule &mol)
+std::expected<void, std::string> read_input(std::istream &input, Calculator &calc, Molecule &mol)
 {
     if (!input)
         return std::unexpected("Invalid input stream");
@@ -207,7 +309,13 @@ std::expected<void, std::string>read_input(std::istream &input, Calculator &calc
     if (!calc_parsed)
         return std::unexpected(calc_parsed.error());
 
-    mol  = std::move(*geom);
+    // check if charge and multiplicity match
+    if (auto checks = check_charge_multiplicity(*geom, *calc_parsed); !checks)
+    {
+        return std::unexpected(checks.error());
+    }
+
+    mol = std::move(*geom);
     calc = std::move(*calc_parsed);
 
     return {};

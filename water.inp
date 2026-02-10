@@ -1,6 +1,9 @@
 [CALC]
-sto-3g rhf cartesian
-0 1
+BASIS       STO-3G
+CALC_TYPE   ENERGY
+THEORY      RHF
+CHARGE      0 
+MULTI       1
 [END CALC]
 
 [GEOM]
