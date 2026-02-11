@@ -42,6 +42,8 @@ file(GLOB SYMM_SRC
 file(GLOB INTERGAL_SRC
     ${SRC_DIR}/integrals/*.cpp
     ${SRC_DIR}/integrals/*.h
+    ${SRC_DIR}/integrals/*/*.cpp
+    ${SRC_DIR}/integrals/*/*.h
 )
 
 file(GLOB MAIN_SRC

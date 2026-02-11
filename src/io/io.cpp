@@ -53,6 +53,23 @@ std::string toLower(const std::string &parsedString)
     return lowerString; // Return the transformed string
 }
 
+IntegralEngine stringtoEnum(const std::string &parsedString)
+{
+    const std::unordered_map<std::string, IntegralEngine> map = {
+        {"OS", IntegralEngine::OS},
+        {"MD", IntegralEngine::MD},
+        {"THO", IntegralEngine::THO}};
+
+    auto it = map.find(parsedString);
+
+    if (it == map.end())
+    {
+        throw std::invalid_argument("Invalid integral engine specified");
+    }
+
+    return it->second;
+}
+
 bool stringToBool(const std::string &parsedString)
 {
     std::string upperStr = parsedString;
@@ -87,8 +104,7 @@ std::expected<void, std::string> check_charge_multiplicity(const Molecule &molec
 
     if (!parity_ok)
     {
-        return std::unexpected(
-            "Parity mismatch: electron count (" + std::to_string(n_elec) + ") incompatible with multiplicity (" + std::to_string(calc.multiplicity) + ")");
+        return std::unexpected("Parity mismatch: electron count (" + std::to_string(n_elec) + ") incompatible with multiplicity (" + std::to_string(calc.multiplicity) + ")");
     }
 
     // Max multiplicity check: multiplicity cannot exceed n_elec + 1
@@ -135,9 +151,7 @@ std::expected<SectionMap, std::string> split_into_sections(std::istream &input)
                     return std::unexpected("END without active section: " + end_name);
 
                 if (end_name != current)
-                    return std::unexpected(
-                        "Mismatched END section. Expected END " + current +
-                        ", got END " + end_name);
+                    return std::unexpected("Mismatched END section. Expected END " + current + ", got END " + end_name);
 
                 current.clear();
                 in_section = false;
@@ -146,8 +160,7 @@ std::expected<SectionMap, std::string> split_into_sections(std::istream &input)
 
             // START tag
             if (in_section)
-                return std::unexpected(
-                    "Nested section [" + tag + "] inside [" + current + "]");
+                return std::unexpected("Nested section [" + tag + "] inside [" + current + "]");
 
             current = tag;
             in_section = true;
@@ -232,10 +245,10 @@ std::expected<Calculator, std::string> parse_calculator(const std::vector<std::s
     // maps to varaibles
     std::unordered_map<std::string, std::function<void(std::string)>> handlers_setup = {
         // calculation information
-        {"CALC_TYPE",   [&calc](std::string value){ calc.calc_type  = toLower(value); }},
-        {"THEORY",      [&calc](std::string value){ calc.method     = toLower(value); }},
-        {"BASIS",       [&calc](std::string value){ calc.basis_name = toLower(value); }},
-        // {"BASIS_PATH",  [&calc](std::string value){ calc.basis_path = toLower(value); }},
+        {"CALC_TYPE",   [&calc](std::string value){ calc.calc_type          = toLower(value); }},
+        {"THEORY",      [&calc](std::string value){ calc.method             = toLower(value); }},
+        {"BASIS",       [&calc](std::string value){ calc.basis_name         = toLower(value); }},
+        {"ROUTINE",     [&calc](std::string value){ calc.integral_engine    = stringtoEnum(value); }},
 
         // diis and symmetry information
         {"USE_SYMM",    [&calc](std::string value){ calc.use_pgsymmetry = stringToBool(value); }},

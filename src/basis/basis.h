@@ -38,16 +38,12 @@ enum class ShellType
 int shell_label_to_L(const std::string &label);
 
 // Generate Cartesian angular momentum tuples for given L
-// Example:
-//   L = 1 → { {1,0,0}, {0,1,0}, {0,0,1} }
+// Example: L = 1 → { {1,0,0}, {0,1,0}, {0,0,1} }
 std::vector<std::array<int, 3>> cartesian_shell_order(int L);
 
 // (Optional, later)
-// std::vector<std::array<int,3>>
-// spherical_shell_order(int L);
+// std::vector<std::array<int,3>> spherical_shell_order(int L);
 
-// Double factorial: (2n-1)!!
-// Required for Gaussian normalization
 double double_factorial(int n);
 
 // Primitive normalization constants for a shell of angular momentum L

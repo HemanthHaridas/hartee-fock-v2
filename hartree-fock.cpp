@@ -3,7 +3,6 @@
 #include "io/logging.h"
 #include "basis/basis.h"
 #include "symmetry/symmetry.h"
-#include "integrals/base.h"
 
 #include <chrono>
 #include <iostream>
@@ -84,6 +83,11 @@ int main(int argc, const char *argv[])
     }
 
     logging(LogLevel::Info, "Input Parsing :", "Successful");
+
+    // Now log all input options
+    logging(LogLevel::Info, "Calculation Type :", calculator.calc_type);
+    logging(LogLevel::Info, "Theory :", calculator.method);
+    logging(LogLevel::Info, "Basis :", calculator.basis_name);
 
     // Detect Symmetry
     if (!calculator.use_pgsymmetry)
@@ -166,21 +170,6 @@ int main(int argc, const char *argv[])
     }
 
     logging(LogLevel::Info, "Basis Construction :", std::format("Generated {} Shells and {} contracted functions", basis.nshells(), basis.nbf()));
-
-    // Find number of shell pairs
-    const std::size_t ns = basis.nshells();
-
-    // Store all shell pairs
-    std::vector<ShellPair> shell_pairs = {};
-    shell_pairs.reserve(ns * (ns + 1) * 0.5);
-
-    for (std::size_t ii = 0; ii < ns; ii++)
-    {
-        for (std::size_t jj = 0; jj <= ii; jj++)
-        {
-            shell_pairs.emplace_back(ShellPair{basis.shells[ii], basis.shells[jj]});
-        }
-    }
 
     const auto program_end = SystemClock::now();
     const std::chrono::duration<double> elapsed = program_end - program_start;

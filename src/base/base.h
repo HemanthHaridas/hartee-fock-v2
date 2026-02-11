@@ -121,6 +121,13 @@ struct Basis
     }
 };
 
+enum IntegralEngine
+{
+    MD,
+    THO,
+    OS
+};
+
 struct Calculator
 {
     // Input
@@ -130,6 +137,8 @@ struct Calculator
     std::string calc_type;  // calculation type
     std::string coord_type; // cartesian / z-matrix
     std::string basis_type; // cartesian / spherical
+
+    IntegralEngine integral_engine = IntegralEngine::OS;
 
     int max_iter = 50;
     int max_scf = 50;

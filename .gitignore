@@ -7,3 +7,4 @@ install*
 build
 bin
 Makefile
+*.sh

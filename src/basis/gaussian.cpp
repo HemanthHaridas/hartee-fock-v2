@@ -85,6 +85,11 @@ static BasisSet read_gbs(std::istream &in)
             continue;
         }
 
+        if (line.starts_with("!"))
+        {
+            continue;
+        }
+        
         /* Element header */
         {
             std::istringstream header(line);

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <string>
-#include <cstdlib>
+#include "base/base.h"
+#include "integrals/shell_pair.h"
 
 /*-----------------------------------------------------------------------------
  * Planck
@@ -20,14 +20,18 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  ----------------------------------------------------------------------------*/
 
-inline std::string get_basis_path()
+namespace ObaraSaika
 {
-    // Check environment variable override
-    const char *env_path = std::getenv("BASIS_PATH");
-    if (env_path && *env_path)
+    namespace Overlap
     {
-        return std::string(env_path);
-    }
-    // Fallback to compiled-in install path
-    return "@BASIS_INSTALL_PATH@";
-}
+        static double computePrimitive1D(int lA, int lB, double PA, double PB, double gamma);
+        double computePrimtive3D(const std::array<int, 3> &am_a, const std::array<int, 3> &am_b, const ShellPair &pair, std::size_t prim_idx);
+        double computeContracted(const ContractedView &bf_a, const ContractedView &bf_b, const ShellPair &pair);
+        std::vector<double> computeOverlap(const Basis &basis);
+    };
+
+    namespace Kinetic
+    {
+
+    };
+};
