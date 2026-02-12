@@ -44,8 +44,6 @@ std::vector<std::array<int, 3>> cartesian_shell_order(int L);
 // (Optional, later)
 // std::vector<std::array<int,3>> spherical_shell_order(int L);
 
-double double_factorial(int n);
-
 // Primitive normalization constants for a shell of angular momentum L
 // Returns vector N_i for each exponent α_i
 std::vector<double> primitive_normalization(int L, const std::vector<double> &exponents);

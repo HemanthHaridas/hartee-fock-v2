@@ -1,7 +1,7 @@
 #pragma once
 
-#include <string>
-#include <cstdlib>
+#include "base/base.h"
+#include "integrals/shell_pair.h"
 
 /*-----------------------------------------------------------------------------
  * Planck
@@ -20,14 +20,11 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  ----------------------------------------------------------------------------*/
 
-inline std::string get_basis_path()
-{
-    // Check environment variable override
-    const char *env_path = std::getenv("BASIS_PATH");
-    if (env_path && *env_path)
+ namespace Huzinaga
+ {
+    namespace Overlap
     {
-        return std::string(env_path);
-    }
-    // Fallback to compiled-in install path
-    return "/Users/hemanthharidas/Desktop/codes/cpp_projects/hartee-fock-v2/share/basis-sets";
-}
+        static double expansionIndex1(int expansionIndex, int lA, int lB, double PA, double PB);
+        static double computePrimitive1D(int lA, int lB, double PA, double PB, double exponentA, double exponentB);
+    };
+ };

@@ -1,18 +1,21 @@
 cmake_minimum_required(VERSION 3.15)
 project(HartreeFock LANGUAGES CXX)
 
+# C++ standard settings
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Source directory
 set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 
+# Install basis sets
 install(
     DIRECTORY ${CMAKE_SOURCE_DIR}/basis-sets 
     DESTINATION share
 )
 
-set(BASIS_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/install/share/basis-sets")
+set(BASIS_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/share/basis-sets")
 
 # Collect sources automatically
 file(GLOB BASE_SRC
@@ -50,28 +53,41 @@ file(GLOB MAIN_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
 )
 
+# Configure generated header
 configure_file(
     ${SRC_DIR}/base/basis.h.in 
     ${SRC_DIR}/base/basis.h @ONLY
 )
 
-# install(
-#     FILES ${SRC_DIR}/base/basis.h 
-#     DESTINATION include/base
-# )
-
-# Create a library from all source files
+# Executable target
 add_executable(hartree-fock
     ${MAIN_SRC}
     ${BASE_SRC}
     ${BASIS_SRC}
     ${IO_SRC}
     ${LOOKUP_SRC}
-    ${INTERGAL_SRC}
+    ${INTEGRAL_SRC}
     ${SYMM_SRC}
 )
 
-# Get the dependencies
+# Optimization flags per platform
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    message(STATUS "Configuring for Linux")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -ftree-vectorize")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    message(STATUS "Configuring for macOS")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -ffast-math")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    message(STATUS "Configuring for Windows")
+    # MSVC uses different flags
+    if (MSVC)
+        add_compile_options(/O2 /arch:AVX2)
+    else()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -ftree-vectorize")
+    endif()
+endif()
+
+# External project: libmsym
 set(MSYM_INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/external/libmsym/install)
 set(MSYM_BUILD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/external/libmsym/build)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/install)
@@ -88,27 +104,18 @@ ExternalProject_Add(
 ExternalProject_Get_Property(libmsym install_dir)
 
 # Include directories
-# target_include_directories(hartree-fock PUBLIC 
-#     ${CMAKE_CURRENT_SOURCE_DIR}/src/base 
-#     ${CMAKE_CURRENT_SOURCE_DIR}/src/basis
-#     ${CMAKE_CURRENT_SOURCE_DIR}/src/io
-#     ${CMAKE_CURRENT_SOURCE_DIR}/src/lookup
-#     ${CMAKE_CURRENT_SOURCE_DIR}/src/symmetry
-#     ${MSYM_INSTALL_DIR}/include  # Include the external library headers
-# )
-# Include directories
 target_include_directories(hartree-fock PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src # root include path
-    ${MSYM_INSTALL_DIR}/include # external lib headers
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${MSYM_INSTALL_DIR}/include
 )
 
-# Link the external library
+# Link external library
 target_link_libraries(hartree-fock
     ${MSYM_INSTALL_DIR}/lib/libmsym.a
 )
 
-# Add dependencies to ensure the external project is built first
+# Ensure libmsym builds before hartree-fock
 add_dependencies(hartree-fock libmsym)
 
-# Install the executable
-install(TARGETS hartree-fock DESTINATION)
+# Install executable
+install(TARGETS hartree-fock DESTINATION bin)
